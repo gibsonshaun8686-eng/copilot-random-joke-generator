@@ -12,6 +12,14 @@
       padding: 0 16px;
     }
 
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
     #joke {
       white-space: pre-wrap;
       margin: 24px 0;
@@ -19,10 +27,9 @@
       line-height: 1.6;
     }
 
-    button {
-      padding: 10px 16px;
+    button, select {
+      padding: 10px 14px;
       font-size: 1rem;
-      margin-right: 8px;
       cursor: pointer;
     }
 
@@ -36,7 +43,18 @@
 <body>
   <h1>Random Joke Generator</h1>
 
-  <div>
+  <div class="controls">
+    <label for="categorySelect">Category:</label>
+    <select id="categorySelect">
+      <option value="Any">Any</option>
+      <option value="Programming">Programming</option>
+      <option value="Misc">Misc</option>
+      <option value="Dark">Dark</option>
+      <option value="Pun">Pun</option>
+      <option value="Spooky">Spooky</option>
+      <option value="Christmas">Christmas</option>
+    </select>
+
     <button id="getJoke">Get a joke</button>
     <button id="autoToggle">Auto (off)</button>
   </div>
@@ -45,19 +63,24 @@
   <div class="meta" id="meta"></div>
 
   <script>
+    const categorySelect = document.getElementById('categorySelect');
     const getJokeBtn = document.getElementById('getJoke');
     const autoToggle = document.getElementById('autoToggle');
     const jokeEl = document.getElementById('joke');
     const metaEl = document.getElementById('meta');
 
     async function fetchJoke() {
+      const category = categorySelect.value;
       getJokeBtn.disabled = true;
       jokeEl.textContent = 'Loading…';
       metaEl.textContent = '';
 
       try {
-        const response = await fetch('/api/joke');
-        if (!response.ok) throw new Error('Network error ' + response.status);
+        const response = await fetch(`/api/joke?category=${encodeURIComponent(category)}`);
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Network error ' + response.status);
+        }
 
         const data = await response.json();
         jokeEl.textContent = data.joke;
@@ -72,6 +95,7 @@
     }
 
     getJokeBtn.addEventListener('click', fetchJoke);
+    categorySelect.addEventListener('change', fetchJoke);
 
     let autoInterval = null;
 

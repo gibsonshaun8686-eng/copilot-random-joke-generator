@@ -6,13 +6,27 @@ const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const JOKE_API =
-  process.env.JOKE_API ||
-  'https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit';
+const validCategories = ['Any', 'Programming', 'Misc', 'Dark', 'Pun', 'Spooky', 'Christmas'];
+
+const getJokeUrl = (category = 'Any') => {
+  const safeCategory = validCategories.includes(category) ? category : 'Any';
+  return `https://v2.jokeapi.dev/joke/${encodeURIComponent(safeCategory)}?blacklistFlags=nsfw,religious,political,racist,sexist,explicit`;
+};
 
 app.get('/api/joke', async (req, res) => {
+  const requestedCategory = req.query.category || 'Any';
+
+  if (!validCategories.includes(requestedCategory)) {
+    return res.status(400).json({
+      error: 'Invalid category',
+      validCategories
+    });
+  }
+
   try {
-    const response = await fetch(JOKE_API);
+    const jokeUrl = getJokeUrl(requestedCategory);
+    const response = await fetch(jokeUrl);
+
     if (!response.ok) {
       return res.status(502).json({
         error: 'Upstream joke API error',
@@ -33,7 +47,7 @@ app.get('/api/joke', async (req, res) => {
 
     res.json({
       joke: jokeText,
-      category: data.category ?? 'Unknown',
+      category: data.category ?? requestedCategory,
       id: data.id ?? null,
       source: 'https://v2.jokeapi.dev'
     });
