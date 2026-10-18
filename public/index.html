@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Random Joke Generator</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 720px;
+      margin: 48px auto;
+      padding: 0 16px;
+    }
+
+    #joke {
+      white-space: pre-wrap;
+      margin: 24px 0;
+      font-size: 1.15rem;
+      line-height: 1.6;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 1rem;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    .meta {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Random Joke Generator</h1>
+
+  <div>
+    <button id="getJoke">Get a joke</button>
+    <button id="autoToggle">Auto (off)</button>
+  </div>
+
+  <div id="joke">Click "Get a joke" to begin.</div>
+  <div class="meta" id="meta"></div>
+
+  <script>
+    const getJokeBtn = document.getElementById('getJoke');
+    const autoToggle = document.getElementById('autoToggle');
+    const jokeEl = document.getElementById('joke');
+    const metaEl = document.getElementById('meta');
+
+    async function fetchJoke() {
+      getJokeBtn.disabled = true;
+      jokeEl.textContent = 'Loading…';
+      metaEl.textContent = '';
+
+      try {
+        const response = await fetch('/api/joke');
+        if (!response.ok) throw new Error('Network error ' + response.status);
+
+        const data = await response.json();
+        jokeEl.textContent = data.joke;
+        metaEl.textContent = `Category: ${data.category}` + (data.id ? ` • id: ${data.id}` : '');
+      } catch (err) {
+        jokeEl.textContent = 'Failed to fetch a joke. Try again.';
+        metaEl.textContent = err.message;
+        console.error(err);
+      } finally {
+        getJokeBtn.disabled = false;
+      }
+    }
+
+    getJokeBtn.addEventListener('click', fetchJoke);
+
+    let autoInterval = null;
+
+    autoToggle.addEventListener('click', () => {
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        autoToggle.textContent = 'Auto (off)';
+      } else {
+        fetchJoke();
+        autoInterval = setInterval(fetchJoke, 8000);
+        autoToggle.textContent = 'Auto (on)';
+      }
+    });
+  </script>
+</body>
+</html>
